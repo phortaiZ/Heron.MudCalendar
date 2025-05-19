@@ -12,6 +12,7 @@ A simple but powerful calendar component for MudBlazor.
 - Multiple views (month, week, work week, and day)
 - Customizable events
 - Easy integration with your existing MudBlazor project
+- Schedule and Unscheduling events
 
 ## Documentation
 
