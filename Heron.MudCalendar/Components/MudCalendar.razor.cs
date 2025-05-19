@@ -190,6 +190,17 @@ public partial class MudCalendar<[DynamicallyAccessedMembers(DynamicallyAccessed
     [Category(CategoryTypes.Calendar.Behavior)]
     public bool ShowMonth { get; set; } = true;
 
+
+    /// <summary>
+    /// If false then the Open/Close Unscheduled AppointmentTasks buttons are not shown.
+    /// </summary>
+    /// <remarks>
+    /// Defaults to <c>false</c>.
+    /// </remarks>
+    [Parameter]
+    [Category(CategoryTypes.Calendar.Behavior)]
+    public bool ShowUnscheduledAppointmentTabsButton { get; set; } = false;
+
     /// <summary>
     /// If false then the prev/next buttons are not shown.
     /// </summary>
@@ -291,16 +302,6 @@ public partial class MudCalendar<[DynamicallyAccessedMembers(DynamicallyAccessed
     [Category(CategoryTypes.Calendar.Appearance)]
     public bool ShowCurrentTime { get; set; }
     
-    /// <summary>
-    /// The culture to use for displaying dates.
-    /// </summary>
-    /// <remarks>
-    /// Defaults to <c>CultureInfo.CurrentCulture</c>.
-    /// </remarks>
-    [Parameter]
-    [Category(CategoryTypes.Calendar.Behavior)]
-    public CultureInfo Culture { get; set; } = CultureInfo.CurrentCulture;
-
     /// <summary>
     /// If true then calendar items can be drag/dropped to different dates/times.
     /// </summary>
@@ -420,6 +421,15 @@ public partial class MudCalendar<[DynamicallyAccessedMembers(DynamicallyAccessed
     [Parameter]
     public EventCallback<DateTime> MoreClicked { get; set; }
 
+    [Parameter]
+    public bool DrawerOpen { get; set; }
+
+    [Parameter]
+    public string UnscheduledAppointmentsTabTitle { get; set; } = "Unscheduled Tasks";
+
+    [Parameter]
+    public Color UnscheduledAppointmentsTabColor { get; set; } = Color.Primary;
+
     private DateTime? PickerDate
     {
         get => CurrentDay;
@@ -434,7 +444,7 @@ public partial class MudCalendar<[DynamicallyAccessedMembers(DynamicallyAccessed
 
     private static CultureInfo? _uiCulture;
     private static string? _todayText;
-
+   
     /// <summary>
     /// Classes added to main div of component.
     /// </summary>
@@ -572,6 +582,16 @@ public partial class MudCalendar<[DynamicallyAccessedMembers(DynamicallyAccessed
     }
 
     /// <summary>
+    /// Method invoked when the user clicks OpenUnscheduledTabsButton.
+    /// </summary>
+    /// <returns></returns>
+    public async Task ToggleDrawer(Color color)
+    {
+        UnscheduledAppointmentsTabColor = color;
+        DrawerOpen = !DrawerOpen;
+    }
+
+    /// <summary>
     /// Method invoked when the user clicks the next button.
     /// </summary>
     /// <returns></returns>
@@ -660,25 +680,13 @@ public partial class MudCalendar<[DynamicallyAccessedMembers(DynamicallyAccessed
 
     private async Task DatePickerDateChanged(DateTime? dateTime)
     {
-        var newDate = dateTime;
-        var oldDate = CurrentDay;
+        var dateChanged = dateTime.HasValue && dateTime != CurrentDay;
         
         PickerDate = dateTime;
         
-        // If month view then set day of month to currently selected day of month
-        if (View == CalendarView.Month && newDate.HasValue && newDate.Value.Day == 1)
-        {
-            var daysInMonth = DateTime.DaysInMonth(newDate.Value.Year, newDate.Value.Month);
-            newDate = oldDate.Day > daysInMonth ? newDate.Value.AddDays(daysInMonth - 1) : newDate.Value.AddDays(oldDate.Day - 1);
-        }
-
-        if (newDate.HasValue && newDate != oldDate)
-        {
-            CurrentDay = newDate!.Value;
-            await CurrentDayChanged.InvokeAsync(CurrentDay);
-        }
+        if (dateChanged) await CurrentDayChanged.InvokeAsync(CurrentDay);
         
-        await ChangeDateRange(new CalendarDateRange(newDate ?? DateTime.Today, View, Culture, GetFirstDayOfWeekByCalendarView(View)));
+        await ChangeDateRange(new CalendarDateRange(dateTime ?? DateTime.Today, View, GetFirstDayOfWeekByCalendarView(View)));
     }
 
     private void OnDatePickerOpened()
@@ -688,7 +696,7 @@ public partial class MudCalendar<[DynamicallyAccessedMembers(DynamicallyAccessed
 
     private async Task ChangeDateRange()
     {
-        await ChangeDateRange(new CalendarDateRange(CurrentDay, View, Culture, GetFirstDayOfWeekByCalendarView(View)));
+        await ChangeDateRange(new CalendarDateRange(CurrentDay, View, GetFirstDayOfWeekByCalendarView(View)));
     }
 
     private async Task ChangeDateRange(CalendarDateRange dateRange)

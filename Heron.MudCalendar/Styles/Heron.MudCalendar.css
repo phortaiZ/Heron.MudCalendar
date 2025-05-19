@@ -46,7 +46,7 @@
   display: flex;
   justify-content: space-between;
   column-gap: 4px;
-  overflow-x: auto;
+  overflow-x: scroll;
 }
 .mud-calendar .mud-cal-toolbar .mud-button-label {
   white-space: nowrap;
@@ -174,11 +174,29 @@
   border-bottom: 1px solid var(--mud-palette-table-lines);
 }
 
+/*Adjusts @RenderHeader styles acording with the Unscheduled Tab*/
+.mud-cal-work-week-header-withtab {
+    display: grid;
+    grid-template-columns: 2fr repeat(5, 1fr) !important; /* First one gets 2 parts, rest get 1 */
+    white-space: nowrap;
+    overflow: hidden;
+    border-bottom: 1px solid var(--mud-palette-table-lines);
+}
+
 .mud-cal-week-header {
-  grid-template-columns: 60px repeat(7, 1fr);
-  white-space: nowrap;
-  overflow: hidden;
-  border-bottom: 1px solid var(--mud-palette-table-lines);
+    grid-template-columns: 60px repeat(7, 1fr);
+    white-space: nowrap;
+    overflow: hidden;
+    border-bottom: 1px solid var(--mud-palette-table-lines);
+}
+
+/*Adjusts @RenderHeader styles acording with the Unscheduled Tab*/
+.mud-cal-week-header-withtab {
+    display: grid;
+    grid-template-columns: 3fr repeat(7, 1fr) !important; /* First one gets 3 parts, rest get 1 */
+    white-space: nowrap;
+    overflow: hidden;
+    border-bottom: 1px solid var(--mud-palette-table-lines);
 }
 
 .mud-cal-day-header {
@@ -220,9 +238,9 @@
   display: block;
   position: absolute;
   height: 100%;
-  width: 100%;
-  left: 0;
+  width: -webkit-fill-available;
   top: 0;
+  /* left: 0;*/
 }
 
 .mud-cal-week-cell-holder {

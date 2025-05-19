@@ -1,3 +1,4 @@
+using System.ComponentModel.Design;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Heron.MudCalendar.Services;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.Options;
 using MudBlazor;
 using MudBlazor.Extensions;
 using MudBlazor.Utilities;
+using static MudBlazor.CategoryTypes;
 
 namespace Heron.MudCalendar;
 
@@ -15,8 +17,18 @@ namespace Heron.MudCalendar;
 /// 
 /// </summary>
 /// <typeparam name="T">The type of item displayed in this month view.</typeparam>
-public partial class MonthView<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> : CalendarViewBase<T>, IDisposable where T:CalendarItem
+public partial class MonthView<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> : CalendarViewBase<T>, IDisposable where T : CalendarItem
 {
+    [Parameter]
+    public bool DrawerOpen { get; set; }
+    [Parameter]
+    public EventCallback<bool> DrawerOpenChanged { get; set; }
+    [Parameter]
+    public Color DrawerColor { get; set; }
+    [Parameter]
+    public string DrawerTitle { get; set; }
+
+
     private MudDropContainer<T>? _dropContainer;
     private ElementReference _monthGrid;
 
@@ -181,19 +193,11 @@ public partial class MonthView<[DynamicallyAccessedMembers(DynamicallyAccessedMe
     protected override List<CalendarCell<T>> BuildCells()
     {
         var cells = new List<CalendarCell<T>>();
-
-        var calendar = Calendar.Culture.Calendar;
-        int year = calendar.GetYear(Calendar.CurrentDay);
-        int month = calendar.GetMonth(Calendar.CurrentDay);
-
-        var monthStart = new DateTime(year, month, 1,calendar);
-
-        int nextMonthYear = calendar.GetYear(Calendar.CurrentDay.AddMonths(1));
-        int nextMonthMonth = calendar.GetMonth(Calendar.CurrentDay.AddMonths(1));
-        var monthEnd = new DateTime(nextMonthYear, nextMonthMonth, 1, Calendar.Culture.Calendar)
+        var monthStart = new DateTime(Calendar.CurrentDay.Year, Calendar.CurrentDay.Month, 1);
+        var monthEnd = new DateTime(Calendar.CurrentDay.AddMonths(1).Year, Calendar.CurrentDay.AddMonths(1).Month, 1)
             .AddDays(-1);
 
-        var range = new CalendarDateRange(Calendar.CurrentDay.Date, CalendarView.Month, Calendar.Culture);
+        var range = new CalendarDateRange(Calendar.CurrentDay.Date, CalendarView.Month);
         if (range.Start == null || range.End == null) return cells;
 
         var date = range.Start.Value;
@@ -247,11 +251,17 @@ public partial class MonthView<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 
         // Make sure it is a valid drop zone
         var id = dropItem.DropzoneIdentifier;
-        if (!DateTime.TryParse(id, out _)) return;
+        if (Guid.TryParse(id, out Guid parsedGuid))
+        {
+            CalendarItem? itemInDropzone = Calendar.Items.FirstOrDefault(x => x.Id == id);
+            if (itemInDropzone is null) return;
+            id = itemInDropzone.Start.ToShortDateString();
+        }
+        if (!DateTime.TryParse(id, out DateTime newDate)) return;
 
-        // Update start and end time
+        //Update start and end time
         var duration = item.End?.Subtract(item.Start) ?? TimeSpan.Zero;
-        item.Start = DateTime.Parse(dropItem.DropzoneIdentifier).Add(item.Start.TimeOfDay);
+        item.Start = newDate.Add(item.Start.TimeOfDay);
         if (item.End.HasValue)
         {
             item.End = item.Start.Add(duration);
@@ -280,13 +290,13 @@ public partial class MonthView<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 
     private string LoadText()
     {
-        if (_moreText != null && Equals(_uiCulture, Calendar.Culture)) return _moreText;
+        if (_moreText != null && Equals(_uiCulture, Thread.CurrentThread.CurrentUICulture)) return _moreText;
 
         var options = Options.Create(new LocalizationOptions { ResourcesPath = "Resources" });
         var factory = new ResourceManagerStringLocalizerFactory(options, NullLoggerFactory.Instance);
         var localizer = new StringLocalizer<MudCalendar<T>>(factory);
 
-        _uiCulture = Calendar.Culture;
+        _uiCulture = Thread.CurrentThread.CurrentUICulture;
         _moreText = localizer["More"];
 
         return _moreText;
@@ -342,4 +352,10 @@ public partial class MonthView<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 
         _jsService?.Dispose();
     }
+
+    //private void ToggleDrawer(Color color)
+    //{
+    //    _drawerColor = color;
+    //    _drawerOpen = !_drawerOpen;
+    //}
 }

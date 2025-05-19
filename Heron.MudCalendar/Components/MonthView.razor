@@ -7,74 +7,109 @@
 @Render
 
 @code {
-
     /// <summary>
     /// Renders the month view.
     /// </summary>
     protected virtual RenderFragment Render =>
-        @<div class="mud-cal-month-table-holder mud-cal-month-view">
-            @RenderHeader
-            @* <div style="flex-grow: 1 !important; min-height: 100%;" class="d-block relative"> *@
-                @* @RenderDays *@
-                <MudDropContainer
-                    @ref="_dropContainer"
-                    T="T"
-                    Items="Calendar.Items.OrderBy(i => i.Start)"
-                    ItemsSelector="@((item, dropzone) => item.Id == dropzone)"
-                    ItemDisabled="@(_ => !Calendar.EnableDragItems)"
-                    ItemDropped="ItemDropped"
-                    CanDropClass="mud-cal-drop-ok"
-                    Class="@Classname">
-                    <ChildContent>
+    @<div class="mud-cal-month-table-holder mud-cal-month-view">
+        @* <div style="flex-grow: 1 !important; min-height: 100%;" class="d-block relative"> *@
+            @* @RenderDays *@
+
+        <MudDropContainer @ref="_dropContainer"
+                          T="T"
+                          Items="Calendar.Items.OrderBy(i => i.Start)"
+                          ItemDropped="ItemDropped"
+                          ItemDisabled="@(_ => !Calendar.EnableDragItems)"
+                          ItemsSelector="@( (item, dropzoneId) => item.Id == dropzoneId || item.Start.ToString("dd/MM/yyyy") == dropzoneId)"
+                          CanDropClass="mud-cal-drop-ok"
+                          Class="@Classname">
+            <ChildContent>
+                <MudDrawerContainer Class="" Style="position:relative;" @bind-Open="@DrawerOpen">
+                    <MudDrawer @bind-Open="@DrawerOpen"
+                               Elevation="0"
+                               Width="25%"
+                               Variant="@DrawerVariant.Persistent"
+                               Color="@DrawerColor">
+                        <MudDrawerHeader>
+                            <MudText Typo="Typo.h6">@DrawerTitle</MudText>
+                        </MudDrawerHeader>
+
+                        @RenderUnscheduledAppointments
+
+                    </MudDrawer>
+                    <MudMainContent Class="pt-0 p-2">
+
+                        @RenderHeader
                         @RenderCells
-                    </ChildContent>
-                    <ItemRenderer>
-                        @RenderTemplate(context)
-                    </ItemRenderer>
-                </MudDropContainer>
-            @* </div> *@
-        </div>;
+
+                    </MudMainContent>
+                </MudDrawerContainer>
+            </ChildContent>
+
+            <ItemRenderer>
+                @RenderTemplate(context)
+            </ItemRenderer>
+        </MudDropContainer>
+
+    @* </div> *@
+    </div>;
 
     /// <summary>
     /// Renders the header of the grid.
     /// </summary>
     protected virtual RenderFragment RenderHeader =>
-        @<div class="mud-cal-grid-header mud-cal-month-grid-header" style="@GridStyle">
-            @for (var i = 0; i < Columns; i++)
-            {
-                <div class="mud-cal-month-header" aria-label="@Cells[i].Date.ToString("dddd")">
-                    @RenderDayTitle(i)
-                </div>
-            }
-        </div>;
+    @<div class="mud-cal-grid-header mud-cal-month-grid-header" style="@GridStyle">
+        @for (var i = 0; i < Columns; i++)
+    {
+        <div class="mud-cal-month-header" aria-label="@Cells[i].Date.ToString("dddd")">
+            @RenderDayTitle(i)
+        </div>
+    }
+    </div>;
 
     /// <summary>
     /// Renders the day name.
     /// </summary>
-    protected virtual RenderFragment RenderDayTitle(int day) => __builder => { __builder.AddContent(1, Cells[day].Date.ToString("ddd", Calendar.Culture)); };
+    protected virtual RenderFragment RenderDayTitle(int day) => __builder => { __builder.AddContent(1, Cells[day].Date.ToString("ddd")); };
 
     /// <summary>
     /// Renders the grid that holds the body of the calendar.
     /// </summary>
     protected virtual RenderFragment RenderDays =>
-        @<div class="mud-cal-grid mud-cal-month-grid" style="@GridStyle">
-            @for (var week = 0; week < Cells.Count / Columns; week++)
-            {
-                @for (var i = week * Columns; i < (week + 1) * Columns; i++)
-                {
-                    var cell = Cells[i];
-                    <div class="@CellClassname" style="@DayStyle(cell, i)"></div>
-                }
-            }
-        </div>;
+    @<div class="mud-cal-grid mud-cal-month-grid" style="@GridStyle">
+        @for (var week = 0; week < Cells.Count / Columns; week++)
+    {
+        @for (var i = week * Columns; i < (week + 1) * Columns; i++)
+    {
+    var cell = Cells[i];
+        <div class="@CellClassname" style="@DayStyle(cell, i)"></div>
+    }
+    }
+    </div>;
 
     /// <summary>
     /// Renders the cells of the grid.
     /// </summary>
     protected virtual RenderFragment RenderCells =>
-        @<div @ref="_monthGrid" class="mud-cal-grid" style="@ContentGridStyle">
-            @RenderContents
-        </div>;
+    @<div @ref="_monthGrid" class="mud-cal-grid" style="@ContentGridStyle">
+        @RenderContents
+    </div>;
+
+    /// <summary>
+    /// Renders the contents of the Unscheduled Appointments.
+    /// </summary>
+    protected virtual RenderFragment RenderUnscheduledAppointments => __builder =>
+    {
+        <div style="padding:10px;"
+             class="rounded mud-background-gray pa-5 mt-0 mx-3 flex-grow-1">
+            <MudDropZone T="T"
+                         OnlyZone="false"
+                         Identifier="01/01/0001"
+                         Style="width:100%; height:100vh;">
+
+                </MudDropZone>
+        </div>
+    };
 
     /// <summary>
     /// Renders the contents of the cells.
@@ -87,8 +122,13 @@
                 @for (var cell = row * Columns; cell < (row * Columns) + Columns; cell++)
                 {
                     var currentCell = Cells[cell];
-                    <MudDropZone T="T" OnlyZone="true" Identifier="@currentCell.Date.Date.ToString("d")"
-                                 Class="@CellClassname" Style="@DayStyle(currentCell, cell)">
+
+                    <MudDropZone T="T"
+                                 OnlyZone="false"
+                                 Identifier="@currentCell.Date.Date.ToString("d")"
+                                 Class="@CellClassname"
+                                 Style="@DayStyle(currentCell, cell)">
+
                         @if (Calendar.CellClicked.HasDelegate)
                         {
                             <a @onclick="() => OnCellLinkClicked(currentCell)" class="mud-cal-month-cell-link">
@@ -112,9 +152,9 @@
     /// Renders the day number of the cell.
     /// </summary>
     protected virtual RenderFragment RenderCellDayNumber(CalendarCell<T> cell) =>
-        @<div class="@DayClassname(cell)">
-            @cell.Date.ToString("dd", Calendar.Culture)
-        </div>;
+    @<div class="@DayClassname(cell)">
+        @cell.Date.Day
+    </div>;
 
     /// <summary>
     /// Renders the contents of the cell.
@@ -152,7 +192,7 @@
         @if (Calendar.EnableResizeItems)
         {
             <Resizer ContainerClass="mud-cal-grid" CellCount="Columns" ResizeX="true"
-                     SizeChanged="@(days => ItemWidthChanged(position.Item, days, cell))"/>
+                     SizeChanged="@(days => ItemWidthChanged(position.Item, days, cell))" />
         }
     };
 
@@ -174,5 +214,4 @@
             </div>
         }
     };
-
 }

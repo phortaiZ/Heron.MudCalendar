@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Components;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 
 namespace Heron.MudCalendar;
 
@@ -11,7 +10,7 @@ public class WorkWeekView<[DynamicallyAccessedMembers(DynamicallyAccessedMemberT
     protected override List<CalendarCell<T>> BuildCells()
     {
         var cells = new List<CalendarCell<T>>();
-        var range = new CalendarDateRange(Calendar.CurrentDay.Date, CalendarView.WorkWeek, Calendar.Culture, Calendar.GetFirstDayOfWeekByCalendarView(CalendarView.WorkWeek));
+        var range = new CalendarDateRange(Calendar.CurrentDay.Date, CalendarView.WorkWeek, Calendar.GetFirstDayOfWeekByCalendarView(CalendarView.WorkWeek));
 
         if (range.Start == null || range.End == null) return cells;
 

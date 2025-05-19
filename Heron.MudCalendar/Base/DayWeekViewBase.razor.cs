@@ -1,5 +1,6 @@
 using Heron.MudCalendar.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using MudBlazor;
 using MudBlazor.Extensions;
 using MudBlazor.Utilities;
@@ -10,6 +11,15 @@ namespace Heron.MudCalendar;
 
 public abstract partial class DayWeekViewBase<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> : CalendarViewBase<T>, IDisposable where T:CalendarItem
 {
+    [Parameter]
+    public bool DrawerOpen { get; set; }
+    [Parameter]
+    public EventCallback<bool> DrawerOpenChanged { get; set; }
+    [Parameter]
+    public Color DrawerColor { get; set; }
+    [Parameter]
+    public string DrawerTitle { get; set; }
+
     private ElementReference _scrollDiv;
     private JsService? _jsService;
 
@@ -41,6 +51,15 @@ public abstract partial class DayWeekViewBase<[DynamicallyAccessedMembers(Dynami
             .AddClass("mud-cal-work-week-header", DaysInView == 5)
             .AddClass("mud-cal-day-header", DaysInView == 1)
             .Build();
+
+    //HeaderClass2 is used to control Header position when the Unscheduled Tab is open
+    protected virtual string HeaderClass2 =>
+       new CssBuilder("mud-cal-grid")
+           .AddClass("mud-cal-grid-header")
+           .AddClass("mud-cal-week-header-withtab", DaysInView == 7)
+           .AddClass("mud-cal-work-week-header-withtab", DaysInView == 5)
+           .AddClass("mud-cal-day-header", DaysInView == 1)
+           .Build();
 
     /// <summary>
     /// Styles the main grid
@@ -351,19 +370,23 @@ public abstract partial class DayWeekViewBase<[DynamicallyAccessedMembers(Dynami
         var item = dropItem.Item;
         var duration = item.End?.Subtract(item.Start) ?? TimeSpan.Zero;
 
-        var ids = dropItem.DropzoneIdentifier.Split("_");
-        if (DateTime.TryParse(ids[0], out var date))
+        var dropzoneIdentifier = dropItem.DropzoneIdentifier;
+        
+        if (Guid.TryParse(dropzoneIdentifier, out Guid parsedGuid))
         {
-            var cell = int.Parse(ids[1]);
-            var minutes = ((double)cell / CellsInDay) * MinutesInDay;
-            date = date.AddMinutes(minutes);
+            CalendarItem? itemInDropzone = Calendar.Items.FirstOrDefault(x => x.Id == dropzoneIdentifier);
+            if (itemInDropzone is null) return;
+
+            var min = itemInDropzone.Start.Subtract(itemInDropzone.Start.Date).TotalMinutes;
+            var row = (int)Math.Floor(min / (int)Calendar.DayTimeInterval);
+            dropzoneIdentifier = string.Concat(itemInDropzone.Start.ToShortDateString(), "_", row.ToString());
         }
-        else
-        {
-            var calendarItem = Cells.SelectMany(c => c.Items).FirstOrDefault(it => it.Id == ids[0]);
-            if(calendarItem == null) return;
-            date = calendarItem.Start;
-        }
+
+        var ids = dropzoneIdentifier.Split("_");
+        if (!DateTime.TryParse(ids[0], out var date)) return;
+        var cell = int.Parse(ids[1]);
+        var minutes = ((double)cell / CellsInDay) * MinutesInDay;
+        date = date.AddMinutes(minutes);
 
         // Update start and end time
         item.Start = date;
