@@ -16,4 +16,13 @@ public class CalendarItem
                                           (End.HasValue && End.Value.Date > Start.Date);
 
     protected internal readonly string Id = Guid.NewGuid().ToString();
+
+    public object? Tag { get; set; } = null;
+
+    public object? Tag2 { get; set; } = null;
+
+    public int DepartmentId { get; set; }
+    
+    public double EstimatedTime { get; set; }
+
 }

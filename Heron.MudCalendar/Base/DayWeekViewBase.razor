@@ -11,58 +11,111 @@
     /// </summary>
     protected virtual RenderFragment Render =>
     @<div class="mud-cal-week-view">
-        <div class="d-flex flex-column mud-height-full">
-            @RenderHeader
-            <div class="flex-grow-1">
-                <div class="d-block relative mud-height-full">
-                    <div @ref="_scrollDiv" class="mud-cal-week-scroll" style="width: 100%;">
-                        <div class="d-block relative">
-                            @RenderTimes
-                            <MudDropContainer
-                                T="T"
-                                Items="Calendar.Items"
-                                ItemsSelector="@((item, dropzone) => item.Id == dropzone)"
-                                ItemDisabled="@(item => !Calendar.EnableDragItems || (Calendar.CanDragItem != null && !Calendar.CanDragItem(item)))"
-                                ItemDropped="ItemDropped"
-                                CanDropClass="mud-cal-drop-ok">
-                                <ChildContent>
-                                    @RenderCells
-                                </ChildContent>
-                                <ItemRenderer>
-                                    @RenderTemplate(context)
-                                </ItemRenderer>
-                            </MudDropContainer>
-                        </div>
+            <div class="d-flex flex-column mud-height-full">
+                @RenderHeader
+                <div class="flex-grow-1">
+                    <div class="d-block relative mud-height-full">
+                                @* <div @ref="_scrollDiv" class="mud-cal-week-scroll" style="width: 100%;"> *@
+
+                        <MudDropContainer T="T"
+                                          Items="Calendar.Items"
+                                          ItemDropped="ItemDropped"
+                                          ItemDisabled="@(_ => !Calendar.EnableDragItems)"
+                                          ItemsSelector="@((item, dropzoneId) => item.Id == dropzoneId ||
+                                                                                     item.Start.ToString("dd/MM/yyyy") + "_01" == dropzoneId)"
+                                          CanDropClass="mud-cal-drop-ok">
+                            <ChildContent>
+                                <MudDrawerContainer @bind-Open="@DrawerOpen">
+                                    <MudDrawer @bind-Open="@DrawerOpen"
+                                               Elevation="0"
+                                               Width="25%"
+                                               Variant="@DrawerVariant.Persistent"
+                                               Color="@DrawerColor">
+                                        <MudDrawerHeader>
+                                            <MudText Typo="Typo.h6">@DrawerTitle</MudText>
+                                        </MudDrawerHeader>
+                                        <div class="d-block relative " style="overflow:none;">
+                                            @RenderUnscheduledAppointments
+                                        </div>
+                                    </MudDrawer>
+                                    <MudMainContent Class="pt-0 p-2">
+                                        <div class="d-block relative">
+                                            <div @ref="_scrollDiv" class="mud-cal-week-scroll" style="width: 100%; height:610px;">
+                                                @RenderTimes
+                                                @RenderCells
+                                            </div>
+                                        </div>
+                                    </MudMainContent>
+                                </MudDrawerContainer>
+
+                            </ChildContent>
+                            <ItemRenderer>
+                                @RenderTemplate(context)
+                            </ItemRenderer>
+                        </MudDropContainer>
                     </div>
                 </div>
             </div>
         </div>
+    ;
+
+    /// <summary>
+    /// Renders the contents of the Unscheduled Appointments.
+    /// </summary>
+    protected virtual RenderFragment RenderUnscheduledAppointments =>
+    @<div>
+        <div style="padding:10px; overflow:auto;"
+                class="rounded mud-background-gray pa-6 mt-0 mx-3 flex-grow-1">
+            <MudDropZone T="T"
+                            OnlyZone="false"
+                            Identifier="01/01/0001_01"
+                            Class="drop-zone"
+                            Style="width:100%; height:50vh;">
+            </MudDropZone>
+        </div>
     </div>;
+    
 
     /// <summary>
     /// Renders the header that contains the day names.
     /// </summary>
     protected virtual RenderFragment RenderHeader =>
     @<div>
-        <div class="@HeaderClass">
-            <div></div>
-            @foreach (var cell in Cells)
-            {
+            @if(DrawerOpen)
+    {
+            <div class="@HeaderClass2">
+                <div></div>
+                @foreach (var cell in Cells)
+        {
+                <div style="flex: 1;" aria-label="@($"{cell.Date:dddd} {cell.Date.Day}")">
+                    @RenderDayTitle(cell)
+                </div>
+        }
+            </div>
+
+    }
+    else
+{
+            <div class="@HeaderClass">
+                <div></div>
+                @foreach (var cell in Cells)
+        {
                 <div aria-label="@($"{cell.Date:dddd} {cell.Date.Day}")">
                     @RenderDayTitle(cell)
                 </div>
-            }
-        </div>
-    </div>;
+        }
+            </div>
+    }
+        </div>;
 
     /// <summary>
     /// Renders the title of a day.
     /// </summary>
     protected virtual RenderFragment RenderDayTitle(CalendarCell<T> cell) => __builder =>
         {
-        __builder.AddContent(1, cell.Date.ToString("ddd", Calendar.Culture));
+        __builder.AddContent(1, cell.Date.ToString("ddd"));
         __builder.AddContent(2, " ");
-        __builder.AddContent(3, cell.Date.ToString("dd", Calendar.Culture));
+        __builder.AddContent(3, cell.Date.Day);
         };
 
     /// <summary>
@@ -70,62 +123,63 @@
     /// </summary>
     protected virtual RenderFragment RenderTimes =>
     @<div class="d-block relative">
-        <div class="@GridClass">
-            @for (var row = 0; row < CellsInDay; row++)
-            {
+            <div class="@GridClass">
+                @for (var row = 0; row < CellsInDay; row++)
+        {
                 <div class="@TimeCellClassname(row)" style="@CellHeightStyle()">
                     @if (IsHourCell(row))
-                    {
-                        @DrawTime(row)
-                    }
+            {
+                    @DrawTime(row)
+            }
                 </div>
                 @foreach (var cell in Cells)
-                {
-                    <div class="@DayCellClassname(cell, row)" style="@DayStyle(cell, row)">
-                        @if (Calendar.ShowCurrentTime && TimelineRow() == row)
-                        {
-                            <hr class="mud-cal-current-time" style="@TimelineStyle()" />
-                        }
-                    </div>
-                }
+        {
+                <div class="@DayCellClassname(cell, row)" style="@DayStyle(cell, row)">
+                    @if (Calendar.ShowCurrentTime && TimelineRow() == row)
+            {
+                    <hr class="mud-cal-current-time" style="@TimelineStyle()" />
             }
-        </div>
-    </div>;
+                </div>
+        }
+        }
+            </div>
+        </div>;
 
     /// <summary>
     /// Renders the cells.
     /// </summary>
     protected virtual RenderFragment RenderCells =>
     @<div class="mud-cal-week-layer">
-        <div class="@GridClass">
-            <div></div>
-            @foreach (var cell in Cells)
-            {
+                    @*mud-cal-week-layer *@
+            <div class="@GridClass">
+                <div></div>
+                @foreach (var cell in Cells)
+        {
                 @RenderCell(cell)
-            }
-        </div>
-    </div>;
+        }
+            </div>
+        </div>;
 
     /// <summary>
     /// Renders an individual cell.
     /// </summary>
     protected virtual RenderFragment RenderCell(CalendarCell<T> cell) =>
     @<div class="mud-cal-week-cell-holder">
-        @for (var i = 0; i < CellsInDay; i++)
+                    @*mud-cal-week-cell-holder*@
+            @for (var i = 0; i < CellsInDay; i++)
+    {
+    var row = i;
+            <MudDropZone T="T" OnlyZone="false" Style="@CellHeightStyle()" Identifier="@string.Concat(cell.Date.Date.ToString("d"), "_", row.ToString())">
+                @if (Calendar.CellClicked.HasDelegate)
         {
-            var row = i;
-            <MudDropZone T="T" OnlyZone="true" Style="@CellHeightStyle()" Identifier="@string.Concat(cell.Date.Date.ToString("d"), "_", row.ToString())"
-                         CanDrop="@(item => Calendar.CanDropItem == null || Calendar.CanDropItem(item, cell.Date.AddMinutes(row * (int)Calendar.DayTimeInterval), View))">
-                @if (AllowCellLinkClick(cell, row))
-                {
-                    <MudLink @onclick="() => OnCellLinkClicked(cell, row)" Class="mud-cal-week-cell-link">
-                        <div class="mud-cal-week-link"></div>
-                    </MudLink>
-                }
-            </MudDropZone>
+                <MudLink @onclick="() => OnCellLinkClicked(cell, row)" Class="mud-cal-week-cell-link">
+                    <div class="mud-cal-week-link"></div>
+                </MudLink>
         }
-        @RenderCellContents(cell)
-    </div>;
+            </MudDropZone>
+    }
+            @RenderCellContents(cell)
+        </div>;
 
     /// <summary>
     /// Renders the contents of a cell.
@@ -137,18 +191,19 @@
         {
             if (position.Item.Start.Date == cell.Date.Date)
             {
-                <WeekDropZone T="T" Position="position" Style="@EventStyle(position)" @key="position.Item.Id">
-                    @if (Calendar.EnableResizeItems && !position.Item.IsMultiDay)
-                    {
-                        <Resizer ContainerClass="@GridClassname" CellCount="CellsInDay" ResizeX="false" SizeChanged="@(newHeight => ItemHeightChanged(position.Item, newHeight))" />
-                    }
-                </WeekDropZone>
+            <WeekDropZone T="T" Position="position" Style="@EventStyle(position)" @key="position.Item.Id">
+                @if (Calendar.EnableResizeItems && !position.Item.IsMultiDay)
+                {
+                    <Resizer ContainerClass="mud-cal-week-grid" CellCount="CellsInDay" ResizeX="false" SizeChanged="@(newHeight => ItemHeightChanged(position.Item, newHeight))" />
+                }
+            </WeekDropZone>
             }
             else
             {
-                <div style="@EventStyle(position)">
-                    @RenderTemplate(position.Item)
-                </div>
+            <div style="@EventStyle(position)">
+                @RenderTemplate(position.Item)
+            </div>
+
             }
         }
     };
@@ -160,15 +215,15 @@
     {
         @if (Calendar.ItemClicked.HasDelegate)
         {
-            <div @onclick="() => OnItemClicked(item)" @onclick:stopPropagation="true" class="mud-cal-week-template-holder mud-cal-clickable">
-                @CellTemplate.Invoke(item)
-            </div>
+        <div @onclick="() => OnItemClicked(item)" @onclick:stopPropagation="true" class="mud-cal-week-template-holder mud-cal-clickable">
+            @CellTemplate.Invoke(item)
+        </div>
         }
         else
         {
-            <div class="mud-cal-week-template-holder">
-                @CellTemplate.Invoke(item)
-            </div>
+        <div class="mud-cal-week-template-holder">
+            @CellTemplate.Invoke(item)
+        </div>
         }
     };
 

@@ -604,6 +604,16 @@ public partial class MudCalendar<[DynamicallyAccessedMembers(DynamicallyAccessed
         var viewTask = ViewChanged.InvokeAsync(View);
         var dateRangeTask = ChangeDateRange();
         return Task.WhenAll(viewTask, dateRangeTask);
+
+    }
+
+    /// <summary>
+    /// Method invoked when the user clicks OpenUnscheduledTabsButton.
+    /// </summary>
+    /// <returns></returns>
+    public async Task ToggleDrawer()
+    {
+        DrawerOpen = !DrawerOpen;
     }
 
     /// <summary>

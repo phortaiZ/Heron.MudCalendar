@@ -1,5 +1,7 @@
 using Heron.MudCalendar.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 using MudBlazor;
 using MudBlazor.Extensions;
 using MudBlazor.Utilities;
@@ -301,7 +303,7 @@ public abstract partial class DayWeekViewBase<[DynamicallyAccessedMembers(Dynami
             // Check that the end date is valid
             if (item.End.HasValue && item.End <= item.Start)
             {
-                throw new ApplicationException("End date of calendar item must be after start date");
+                //throw new ApplicationException("End date of calendar item must be after start date");
             }
 
             // Create new position object
